@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Reverse Proxy
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - service-a
+      - service-b
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Microservice A
+  service-a:
+    build:
+      context: ./service-a
+      dockerfile: Dockerfile
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/tmp
+    volumes:
+      - ./service-a/app.py:/app/app.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Microservice B  
+  service-b:
+    build:
+      context: ./service-b
+      dockerfile: Dockerfile
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/tmp
+    volumes:
+      - ./service-b/app.py:/app/app.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - service-a
+      - service-b
+
+  # Visualization
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # Auto-healing
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --cleanup
+    restart: unless-stopped
+
+volumes:
+  grafana-storage:
