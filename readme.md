@@ -2,7 +2,7 @@
 _A self-healing microservice architecture with Docker, Flask, Prometheus, and Grafana_
 
 ## 📦 System Architecture
-![System Architecture Diagram](Self-Healing%20Microservices%20Workflow.png)
+![System Architecture Diagram](architecture-diagram.png)
 
 ## 🚀 Quick Start
 ```bash
