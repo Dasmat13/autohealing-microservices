@@ -59,6 +59,7 @@ services:
     depends_on:
       - service-a
       - service-b
+      - cadvisor
 
   # Visualization
   grafana:
@@ -72,6 +73,18 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
+
+  # Container-level metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: always
 
   # Auto-healing
   watchtower:
